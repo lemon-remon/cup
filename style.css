@@ -1,0 +1,101 @@
+#title{
+    text-align: center;
+    margin: 0;
+    padding: 0;
+}
+
+#titleRow{
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1%;
+    background: white;
+    z-index: 101;
+    padding: 1% 0;
+}
+
+#resetColors{
+    font-size: 1vw;
+    padding: 0.5% 1%;
+    cursor: pointer;
+}
+
+#showResults{
+    font-size: 1vw;
+    padding: 0.5% 1%;
+    cursor: pointer;
+}
+
+/* Modal styles */
+.hidden{ display: none; }
+.modal{
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.4);
+    z-index: 200;
+}
+.modal-content{
+    background: #ffffff;
+    width: 60%;
+    max-width: 800px;
+    padding: 2% 2.5%;
+    border-radius: 6px;
+    box-shadow: 0 2% 4% rgba(0,0,0,0.2);
+    box-sizing: border-box;
+    position: relative;
+}
+.modal-close{
+    position: absolute;
+    top: 1%;
+    right: 1%;
+    background: transparent;
+    border: none;
+    font-size: 2vw;
+    cursor: pointer;
+}
+#resultsList{
+    margin-top: 1.5%;
+    max-height: 50vh;
+    overflow: auto;
+    font-size: 1.2vw;
+    white-space: pre-wrap;
+}
+
+body{
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+#buttonContainer{
+    display: grid;
+    grid-template-columns: repeat(40, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 2%;
+    padding: 2%;
+    flex: 1;
+    margin-top: 6%;
+}
+
+.square-button{
+    aspect-ratio: 1 / 1;
+    background-color: #e0e0e0;
+    border: 1px solid #999;
+    cursor: pointer;
+    font-size: 2.5vw;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 2%;
+    box-sizing: border-box;
+}
+.modal.hidden{ display: none !important; }

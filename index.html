@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>出席確認</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="titleRow">
+    <h2 id="title">ロッカーチェック</h2>
+    <button id="resetColors" title="色をリセット">色リセット</button>
+    <button id="showResults" title="赤のボタンの中身を表示">リザルト</button>
+  </div>
+
+  <div id="buttonContainer"></div>
+
+  <!-- Results modal -->
+  <div id="resultsModal" class="modal hidden">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="resultsTitle">
+      <button id="closeModal" class="modal-close" aria-label="閉じる">×</button>
+      <h3 id="resultsTitle">赤/黒のボタン内容</h3>
+      <div id="resultsList"></div>
+    </div>
+  </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
