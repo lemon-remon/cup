@@ -48,7 +48,7 @@ for (let i = 1; i <= totalButtons; i++) {
     if (clickCount === 3) {
       clearTimeout(clickTimer);
       clickCount = 0;
-      const newText = prompt("新しいテキストを入力してください:", button.textContent);
+      const newText = prompt("名前入れて:", button.textContent);
       if (newText !== null) {
         await setDoc(docRef, { labels: { [i]: newText } }, { merge: true });
       }
@@ -183,3 +183,4 @@ if (showBtn) {
     openResultsModal(lines);
   });
 }
+
