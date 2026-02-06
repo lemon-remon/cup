@@ -269,3 +269,121 @@ body {
 #resultsList::-webkit-scrollbar-thumb:hover {
     background: #bbb;
 }
+
+/* =========================================
+   Simple & Clean Input Modal Styles
+   ========================================= */
+
+.input-modal-overlay {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: none;
+}
+
+.input-modal-card {
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 2rem;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    position: relative;
+    font-family: var(--font-stack);
+}
+
+/* 以前の装飾的な擬似要素は削除 */
+.input-modal-card::before {
+    display: none;
+}
+
+#inputTitle {
+    color: var(--primary-color);
+    font-size: 1.4rem;
+    margin: 0 0 1.5rem 0;
+    font-weight: 600;
+    letter-spacing: normal;
+}
+
+.input-subtitle {
+    display: none;
+}
+
+/* Simple Input Wrapper */
+.input-wrapper {
+    position: relative;
+    margin-bottom: 2rem;
+    width: 100%;
+    text-align: left;
+}
+
+.modal-input-modern {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 1rem;
+    color: var(--text-color);
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    outline: none;
+    transition: all 0.2s;
+    font-family: var(--font-stack);
+    box-sizing: border-box;
+}
+
+.modal-input-modern:focus {
+    background: #fff;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+}
+
+.floating-label {
+    display: none;
+}
+
+/* Buttons */
+.modal-actions-modern {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.modal-btn-modern {
+    padding: 8px 20px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: normal;
+    text-transform: none;
+}
+
+.modal-btn-modern.primary {
+    background: var(--accent-color);
+    color: white;
+    box-shadow: none;
+}
+
+.modal-btn-modern.primary:hover {
+    background: #2980b9;
+    transform: none;
+    box-shadow: none;
+}
+
+.modal-btn-modern.secondary {
+    background: transparent;
+    color: #666;
+    border: 1px solid #ddd;
+}
+
+.modal-btn-modern.secondary:hover {
+    background: #f5f5f5;
+    color: #333;
+    transform: none;
+}
+
+.modal-btn-modern:active {
+    background-color: #e5e5e5;
+}

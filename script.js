@@ -48,10 +48,7 @@ for (let i = 1; i <= totalButtons; i++) {
     if (clickCount === 3) {
       clearTimeout(clickTimer);
       clickCount = 0;
-      const newText = prompt("新しいテキストを入力してください:", button.textContent);
-      if (newText !== null) {
-        await setDoc(docRef, { labels: { [i]: newText } }, { merge: true });
-      }
+      openInputModal(i, button.textContent);
       return;
     }
 
@@ -59,7 +56,7 @@ for (let i = 1; i <= totalButtons; i++) {
     clickTimer = setTimeout(async () => {
       if (clickCount === 1) {
         const current = button.dataset.color || 'none';
-        const order = ['none', 'yellow', 'orange', 'red', 'black'];
+        const order = ['none', 'orange', 'yellow', 'red', 'black'];
         const next = order[(order.indexOf(current) + 1) % order.length];
         button.dataset.color = next;
         button.style.backgroundColor = next === 'none' ? '#e0e0e0' : next;
@@ -115,6 +112,33 @@ const resultsModal = document.getElementById('resultsModal');
 const resultsList = document.getElementById('resultsList');
 const closeModal = document.getElementById('closeModal');
 
+/* 入力モーダル要素 (New Design) */
+const inputModal = document.getElementById('inputModal');
+const inputField = document.getElementById('inputField');
+const cancelInputLink = document.getElementById('cancelInput');
+const saveInputBtn = document.getElementById('saveInput');
+
+let editingButtonId = null;
+
+function openInputModal(id, currentText) {
+  if (!inputModal) return;
+  editingButtonId = id;
+  // 初期値セット
+  inputField.value = currentText;
+  // モーダル表示
+  inputModal.classList.remove('hidden');
+  // アニメーションなどでtransitionが終わってからfocusしたほうが安全だが、今回は少し遅らせる
+  setTimeout(() => inputField.focus(), 50);
+}
+
+function closeInputModal() {
+  if (!inputModal) return;
+  inputModal.classList.add('hidden');
+  editingButtonId = null;
+  inputField.value = ''; // Reset value
+  inputField.blur();
+}
+
 function openResultsModal(lines) {
   if (!resultsModal || !resultsList) return;
   resultsList.innerHTML = '';
@@ -136,6 +160,45 @@ if (closeModal) closeModal.addEventListener('click', closeResultsModal);
 if (resultsModal) resultsModal.addEventListener('click', (e) => {
   if (e.target === resultsModal) closeResultsModal();
 });
+
+/* 入力モーダル制御 */
+if (inputModal) {
+  // 背景クリックで閉じる
+  inputModal.addEventListener('click', (e) => {
+    if (e.target === inputModal) closeInputModal();
+  });
+
+  // キャンセルボタン
+  if (cancelInputLink) {
+    cancelInputLink.addEventListener('click', closeInputModal);
+  }
+
+  // 保存処理
+  const saveAction = async () => {
+    if (editingButtonId !== null) {
+      const newText = inputField.value;
+      // 値が空でも保存（名前を消したいケース対応）
+      await setDoc(docRef, { labels: { [editingButtonId]: newText } }, { merge: true });
+      closeInputModal();
+    }
+  };
+
+  // 保存ボタン
+  if (saveInputBtn) {
+    saveInputBtn.addEventListener('click', saveAction);
+  }
+
+  // Enterキーで保存、Escapeでキャンセル
+  inputField.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveAction();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      closeInputModal();
+    }
+  });
+}
 
 if (showBtn) {
   showBtn.addEventListener('click', () => {
