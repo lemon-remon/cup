@@ -1,10 +1,35 @@
-#title{
-    text-align: center;
-    margin: 0;
-    padding: 0;
+:root {
+    /* カラーパレット */
+    --primary-color: #2c3e50;
+    --accent-color: #3498db;
+    --background-start: #f5f7fa;
+    --background-end: #c3cfe2;
+    --white: #ffffff;
+    --light-gray: #ecf0f1;
+    --text-color: #333333;
+    --shadow-soft: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-hover: 0 10px 15px rgba(0, 0, 0, 0.15);
+    --font-stack: 'Noto Sans JP', sans-serif;
+
+    /* モーダル */
+    --modal-overlay: rgba(0, 0, 0, 0.5);
 }
 
-#titleRow{
+body {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font-family: var(--font-stack);
+    /* グラデーションを維持し、attachment: fixedでスクロール時の切れ目を防止 */
+    background: linear-gradient(135deg, var(--background-start) 0%, var(--background-end) 100%);
+    background-attachment: fixed;
+    color: var(--text-color);
+}
+
+/* ヘッダーエリア */
+#titleRow {
     position: fixed;
     top: 0;
     left: 0;
@@ -13,89 +38,234 @@
     align-items: center;
     justify-content: center;
     gap: 1%;
-    background: white;
+    /* 元のgapに戻す */
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     z-index: 101;
     padding: 1% 0;
+    /* 元のpaddingに戻す */
+    box-shadow: var(--shadow-soft);
+    transition: all 0.3s ease;
 }
 
-#resetColors{
-    font-size: 1vw;
-    padding: 0.5% 1%;
-    cursor: pointer;
+#title {
+    text-align: center;
+    margin: 0;
+    padding: 0;
+    font-size: 1.5rem;
+    /* タイトルサイズはCSSに元々指定がなかったので、バランスを見て少し調整 */
+    font-weight: 700;
+    color: var(--primary-color);
+    letter-spacing: 0.05em;
 }
 
-#showResults{
+/* ヘッダーボタン共通スタイル */
+#resetColors,
+#showResults {
+    font-family: var(--font-stack);
     font-size: 1vw;
+    /* 元のサイズに戻す */
     padding: 0.5% 1%;
+    /* 元のpaddingに戻す */
+    font-weight: 500;
     cursor: pointer;
+    background: var(--white);
+    border: 1px solid var(--light-gray);
+    border-radius: 8px;
+    color: var(--primary-color);
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+#resetColors:hover,
+#showResults:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-soft);
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+}
+
+#resetColors:disabled,
+#showResults:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+
+/* メインコンテンツ（グリッド） */
+#buttonContainer {
+    display: grid;
+    grid-template-columns: repeat(40, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 2%;
+    /* 元のgapに戻す */
+    padding: 2%;
+    /* 元のpaddingに戻す */
+    flex: 1;
+    margin-top: 6%;
+    /* 元のマージンに戻す */
+    box-sizing: border-box;
+    /* width指定は削除してflex:1とpaddingに任せる（元の挙動に近い） */
+}
+
+.square-button {
+    aspect-ratio: 1 / 1;
+    background-color: var(--white);
+    border: none;
+    /* ボーダーなしのデザインは維持 */
+    cursor: pointer;
+    font-family: var(--font-stack);
+    font-size: 2.5vw;
+    /* 元のサイズに戻す */
+    display: flex;
+    align-items: flex-start;
+    /* 元の配置（上揃え）に戻す */
+    justify-content: center;
+    padding: 0;
+    padding-top: 2%;
+    /* 元のpaddingに戻す */
+    box-sizing: border-box;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    color: var(--text-color);
+}
+
+/* ホバーエフェクト（disabledでない場合） */
+.square-button:not(:disabled):hover {
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+}
+
+/* 色付きボタンの発色調整 */
+.square-button[data-color="red"] {
+    background-color: #ff6b6b !important;
+    color: white !important;
+}
+
+.square-button[data-color="orange"] {
+    background-color: #feca57 !important;
+    color: white !important;
+}
+
+.square-button[data-color="yellow"] {
+    background-color: #ff9f43 !important;
+    color: white !important;
+}
+
+.square-button[data-color="black"] {
+    background-color: #222f3e !important;
+    color: white !important;
 }
 
 /* Modal styles */
-.hidden{ display: none; }
-.modal{
+.hidden {
+    display: none !important;
+    /* !importantを追加して確実に消す（元のCSSにもあった） */
+}
+
+.modal {
     position: fixed;
     inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0,0,0,0.4);
+    background: var(--modal-overlay);
+    backdrop-filter: blur(4px);
     z-index: 200;
+    opacity: 0;
+    animation: fadeIn 0.3s forwards;
 }
-.modal-content{
-    background: #ffffff;
+
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+    }
+}
+
+.modal-content {
+    background: var(--white);
     width: 60%;
+    /* 元の幅に戻す */
     max-width: 800px;
+    /* 元のmax-widthに戻す */
     padding: 2% 2.5%;
-    border-radius: 6px;
-    box-shadow: 0 2% 4% rgba(0,0,0,0.2);
+    /* 元のpaddingに戻す */
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
     box-sizing: border-box;
     position: relative;
+    transform: scale(0.95);
+    animation: scaleUp 0.3s forwards;
 }
-.modal-close{
+
+@keyframes scaleUp {
+    to {
+        transform: scale(1);
+    }
+}
+
+.modal-close {
     position: absolute;
     top: 1%;
+    /* 元の位置に戻す */
     right: 1%;
+    /* 元の位置に戻す */
     background: transparent;
     border: none;
     font-size: 2vw;
+    /* 元のサイズに戻す */
+    color: #999;
     cursor: pointer;
+    transition: color 0.2s;
+    line-height: 1;
 }
-#resultsList{
+
+.modal-close:hover {
+    color: var(--primary-color);
+}
+
+#resultsTitle {
+    margin-top: 0;
+    text-align: center;
+    color: var(--primary-color);
+    font-size: 1.5rem;
+    border-bottom: 2px solid var(--light-gray);
+    padding-bottom: 15px;
+}
+
+#resultsList {
     margin-top: 1.5%;
+    /* 元のマージン */
     max-height: 50vh;
-    overflow: auto;
+    overflow-y: auto;
     font-size: 1.2vw;
+    /* 元のサイズに戻す */
+    line-height: 1.6;
+    color: var(--text-color);
     white-space: pre-wrap;
+    padding-right: 10px;
 }
 
-body{
-    margin: 0;
-    padding: 0;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
+/* スクロールバーのカスタマイズ */
+#resultsList::-webkit-scrollbar {
+    width: 8px;
 }
 
-#buttonContainer{
-    display: grid;
-    grid-template-columns: repeat(40, 1fr);
-    grid-template-rows: repeat(3, 1fr);
-    gap: 2%;
-    padding: 2%;
-    flex: 1;
-    margin-top: 6%;
+#resultsList::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
 }
 
-.square-button{
-    aspect-ratio: 1 / 1;
-    background-color: #e0e0e0;
-    border: 1px solid #999;
-    cursor: pointer;
-    font-size: 2.5vw;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    padding-top: 2%;
-    box-sizing: border-box;
+#resultsList::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
 }
-.modal.hidden{ display: none !important; }
+
+#resultsList::-webkit-scrollbar-thumb:hover {
+    background: #bbb;
+}
