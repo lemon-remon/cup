@@ -97,12 +97,54 @@ onSnapshot(docRef, (snapshot) => {
 const resetBtn = document.getElementById('resetColors');
 if (resetBtn) {
   resetBtn.addEventListener('click', async () => {
-    // 全ボタンの色を 'none' に設定して一度に保存
-    const colorsPayload = {};
-    for (let i = 1; i <= totalButtons; i++) {
-      colorsPayload[i] = 'none';
-    }
-    await setDoc(docRef, { colors: colorsPayload }, { merge: true });
+    // ボタンの無効化（連打防止）
+    resetBtn.disabled = true;
+
+    // 最大遅延時間の計算用
+    let maxDelay = 0;
+
+    // 全ボタンに対してアニメーション適用
+    buttons.forEach((button, index) => {
+      // indexは0始まりの配列インデックス、IDはindex+1
+      // グリッド座標を計算 (Rows=3, Columns=40)
+      // index = row * columns + col
+      const row = Math.floor(index / 40);
+      const col = index % 40;
+
+      // 左上(0,0)から右下への波紋のような遅延
+      const delay = (col + row) * 30; // 30msごとに伝播
+      if (delay > maxDelay) maxDelay = delay;
+
+      setTimeout(() => {
+        // アニメーションクラス付与
+        button.classList.add('reset-animating');
+
+        // 色を視覚的にリセット (データ更新前の先行表示)
+        button.style.backgroundColor = '#e0e0e0';
+        button.style.color = '#000000';
+        button.dataset.color = 'none';
+
+        // アニメーション終了後にクラス削除
+        setTimeout(() => {
+          button.classList.remove('reset-animating');
+        }, 400); // CSSのアニメーション時間と合わせる
+      }, delay);
+    });
+
+    // アニメーションが全体に行き渡った頃合いを見てデータ更新
+    setTimeout(async () => {
+      const colorsPayload = {};
+      for (let i = 1; i <= totalButtons; i++) {
+        colorsPayload[i] = 'none';
+      }
+      try {
+        await setDoc(docRef, { colors: colorsPayload }, { merge: true });
+      } catch (e) {
+        console.error("Reset failed:", e);
+      } finally {
+        resetBtn.disabled = false;
+      }
+    }, maxDelay + 200);
   });
 }
 
