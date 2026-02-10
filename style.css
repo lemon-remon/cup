@@ -1,5 +1,4 @@
 :root {
-    /* カラーパレット */
     --primary-color: #2c3e50;
     --accent-color: #3498db;
     --background-start: #f5f7fa;
@@ -11,7 +10,6 @@
     --shadow-hover: 0 10px 15px rgba(0, 0, 0, 0.15);
     --font-stack: 'Noto Sans JP', sans-serif;
 
-    /* モーダル */
     --modal-overlay: rgba(0, 0, 0, 0.5);
 }
 
@@ -22,13 +20,11 @@ body {
     display: flex;
     flex-direction: column;
     font-family: var(--font-stack);
-    /* グラデーションを維持し、attachment: fixedでスクロール時の切れ目を防止 */
     background: linear-gradient(135deg, var(--background-start) 0%, var(--background-end) 100%);
     background-attachment: fixed;
     color: var(--text-color);
 }
 
-/* ヘッダーエリア */
 #titleRow {
     position: fixed;
     top: 0;
@@ -38,13 +34,11 @@ body {
     align-items: center;
     justify-content: center;
     gap: 1%;
-    /* 元のgapに戻す */
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     z-index: 101;
     padding: 1% 0;
-    /* 元のpaddingに戻す */
     box-shadow: var(--shadow-soft);
     transition: all 0.3s ease;
 }
@@ -54,20 +48,16 @@ body {
     margin: 0;
     padding: 0;
     font-size: 1.5rem;
-    /* タイトルサイズはCSSに元々指定がなかったので、バランスを見て少し調整 */
     font-weight: 700;
     color: var(--primary-color);
     letter-spacing: 0.05em;
 }
 
-/* ヘッダーボタン共通スタイル */
 #resetColors,
 #showResults {
     font-family: var(--font-stack);
     font-size: 1vw;
-    /* 元のサイズに戻す */
     padding: 0.5% 1%;
-    /* 元のpaddingに戻す */
     font-weight: 500;
     cursor: pointer;
     background: var(--white);
@@ -95,38 +85,29 @@ body {
 }
 
 
-/* メインコンテンツ（グリッド） */
 #buttonContainer {
     display: grid;
     grid-template-columns: repeat(40, 1fr);
     grid-template-rows: repeat(3, 1fr);
     gap: 2%;
-    /* 元のgapに戻す */
     padding: 2%;
-    /* 元のpaddingに戻す */
     flex: 1;
     margin-top: 6%;
-    /* 元のマージンに戻す */
     box-sizing: border-box;
-    /* width指定は削除してflex:1とpaddingに任せる（元の挙動に近い） */
 }
 
 .square-button {
     aspect-ratio: 1 / 1;
     background-color: var(--white);
     border: none;
-    /* ボーダーなしのデザインは維持 */
     cursor: pointer;
     font-family: var(--font-stack);
     font-size: 2.5vw;
-    /* 元のサイズに戻す */
     display: flex;
     align-items: flex-start;
-    /* 元の配置（上揃え）に戻す */
     justify-content: center;
     padding: 0;
     padding-top: 2%;
-    /* 元のpaddingに戻す */
     box-sizing: border-box;
     border-radius: 6px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
@@ -134,14 +115,12 @@ body {
     color: var(--text-color);
 }
 
-/* ホバーエフェクト（disabledでない場合） */
 .square-button:not(:disabled):hover {
     transform: translateY(-4px) scale(1.05);
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
     z-index: 10;
 }
 
-/* 色付きボタンの発色調整 */
 .square-button[data-color="red"] {
     background-color: #ff6b6b !important;
     color: white !important;
@@ -162,10 +141,8 @@ body {
     color: white !important;
 }
 
-/* Modal styles */
 .hidden {
     display: none !important;
-    /* !importantを追加して確実に消す（元のCSSにもあった） */
 }
 
 .modal {
@@ -190,11 +167,8 @@ body {
 .modal-content {
     background: var(--white);
     width: 60%;
-    /* 元の幅に戻す */
     max-width: 800px;
-    /* 元のmax-widthに戻す */
     padding: 2% 2.5%;
-    /* 元のpaddingに戻す */
     border-radius: 16px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
     box-sizing: border-box;
@@ -212,13 +186,10 @@ body {
 .modal-close {
     position: absolute;
     top: 1%;
-    /* 元の位置に戻す */
     right: 1%;
-    /* 元の位置に戻す */
     background: transparent;
     border: none;
     font-size: 2vw;
-    /* 元のサイズに戻す */
     color: #999;
     cursor: pointer;
     transition: color 0.2s;
@@ -240,18 +211,15 @@ body {
 
 #resultsList {
     margin-top: 1.5%;
-    /* 元のマージン */
     max-height: 50vh;
     overflow-y: auto;
     font-size: 1.2vw;
-    /* 元のサイズに戻す */
     line-height: 1.6;
     color: var(--text-color);
     white-space: pre-wrap;
     padding-right: 10px;
 }
 
-/* スクロールバーのカスタマイズ */
 #resultsList::-webkit-scrollbar {
     width: 8px;
 }
@@ -270,9 +238,6 @@ body {
     background: #bbb;
 }
 
-/* =========================================
-   Simple & Clean Input Modal Styles
-   ========================================= */
 
 .input-modal-overlay {
     background: rgba(0, 0, 0, 0.5);
@@ -292,7 +257,6 @@ body {
     font-family: var(--font-stack);
 }
 
-/* 以前の装飾的な擬似要素は削除 */
 .input-modal-card::before {
     display: none;
 }
@@ -309,7 +273,6 @@ body {
     display: none;
 }
 
-/* Simple Input Wrapper */
 .input-wrapper {
     position: relative;
     margin-bottom: 2rem;
@@ -341,7 +304,6 @@ body {
     display: none;
 }
 
-/* Buttons */
 .modal-actions-modern {
     display: flex;
     justify-content: flex-end;
@@ -388,7 +350,6 @@ body {
     background-color: #e5e5e5;
 }
 
-/* Reset Animation */
 @keyframes resetPulse {
     0% {
         transform: scale(1);
