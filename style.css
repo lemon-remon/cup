@@ -113,6 +113,28 @@ body {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
     color: var(--text-color);
+
+    /* Startup Animation base */
+    opacity: 0;
+    /* Start hidden */
+    animation: fallInBounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes fallInBounce {
+    0% {
+        opacity: 0;
+        transform: translateY(-50px) scale(0.8);
+    }
+
+    60% {
+        opacity: 1;
+        transform: translateY(10px) scale(1.02);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .square-button:not(:disabled):hover {

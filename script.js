@@ -30,8 +30,11 @@ const buttons = [];
 for (let i = 1; i <= totalButtons; i++) {
   const button = document.createElement("button");
   button.className = "square-button";
-  button.textContent = i;
+  button.textContent = ''; // Default empty
   button.dataset.id = i;
+
+  // Stagger animation: 5ms delay per button (Faster)
+  button.style.animationDelay = `${i * 0.005}s`;
 
   let clickCount = 0;
   let clickTimer = null;
@@ -74,7 +77,7 @@ onSnapshot(docRef, (snapshot) => {
     if (labels[id] !== undefined) {
       button.textContent = labels[id];
     } else {
-      button.textContent = id;
+      button.textContent = ''; // Default empty
     }
     const color = colors[id] || 'none';
     button.dataset.color = color;
