@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, deleteDoc, doc, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyDdQyh3u1ZgzlgbIb3dc1Gx--5Hdkukx6U",
@@ -9,6 +9,13 @@ const firebaseConfig = {
     messagingSenderId: "245177049970",
     appId: "1:245177049970:web:634a9cc62418161722b3eb"
 };
+
+// Client ID for identifying user's posts
+let clientId = localStorage.getItem('othelloClientId');
+if (!clientId) {
+    clientId = 'user_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('othelloClientId', clientId);
+}
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -114,7 +121,8 @@ async function sendMessage() {
         await addDoc(collection(db, "messages"), {
             name: name,
             content: content,
-            timestamp: serverTimestamp()
+            timestamp: serverTimestamp(),
+            clientId: clientId
         });
         messageInput.value = '';
     } catch (e) {
@@ -155,8 +163,119 @@ onSnapshot(q, (snapshot) => {
     });
 });
 
+
+
+const deleteAllBtn = document.getElementById('deleteAllBtn');
+if (deleteAllBtn) {
+    deleteAllBtn.addEventListener('click', async () => {
+        if (!confirm('本当に自分の投稿を全て削除しますか？')) return;
+
+        deleteAllBtn.disabled = true;
+        deleteAllBtn.innerText = '削除中...';
+
+        try {
+            // Query for my messages
+            const q = query(
+                collection(db, "messages"),
+                where("clientId", "==", clientId)
+            );
+
+            const snapshot = await getDocs(q);
+
+            if (snapshot.empty) {
+                alert("削除対象のメッセージがありませんでした。");
+                deleteAllBtn.disabled = false;
+                deleteAllBtn.innerText = '自分の投稿を全て削除';
+                return;
+            }
+
+            const deletePromises = [];
+            let deletedCount = 0;
+            let lockedCount = 0;
+
+            snapshot.forEach(docSnap => {
+                const data = docSnap.data();
+                if (data.locked) {
+                    lockedCount++;
+                    return; // Skip locked
+                }
+
+                deletePromises.push(deleteDoc(doc(db, "messages", docSnap.id)));
+                deletedCount++;
+            });
+
+            await Promise.all(deletePromises);
+
+            let resultMsg = `${deletedCount}件のメッセージを削除しました。`;
+            if (lockedCount > 0) resultMsg += `\n(${lockedCount}件はロック済みのため残しました)`;
+            alert(resultMsg);
+
+        } catch (e) {
+            console.error("Bulk delete error:", e);
+            alert("削除中にエラーが発生しました。");
+        } finally {
+            deleteAllBtn.disabled = false;
+            deleteAllBtn.innerText = '自分の投稿を全て削除';
+        }
+    });
+}
+
+
+
+const adminDeleteBtn = document.getElementById('adminDeleteBtn');
+if (adminDeleteBtn) {
+    adminDeleteBtn.addEventListener('click', async () => {
+        const password = prompt('管理者機能: 全投稿を削除するためのパスワードを入力してください');
+        if (password !== '3141592') {
+            if (password !== null) alert('パスワードが違います');
+            return;
+        }
+
+        if (!confirm('本当に全ての投稿を削除しますか？\nこの操作は取り消せません。')) return;
+
+        adminDeleteBtn.disabled = true;
+        adminDeleteBtn.innerText = '全削除中...';
+
+        try {
+            // Get all messages
+            const q = query(collection(db, "messages"));
+            const snapshot = await getDocs(q);
+
+            if (snapshot.empty) {
+                alert("削除するメッセージがありません。");
+                return;
+            }
+
+            const deletePromises = [];
+            snapshot.forEach(docSnap => {
+                deletePromises.push(deleteDoc(doc(db, "messages", docSnap.id)));
+            });
+
+            await Promise.all(deletePromises);
+            alert('全てのメッセージを削除しました。');
+
+        } catch (e) {
+            console.error("Admin delete error:", e);
+            alert("削除中にエラーが発生しました。");
+        } finally {
+            adminDeleteBtn.disabled = false;
+            adminDeleteBtn.innerText = '管理者用: 全投稿を削除';
+        }
+    });
+}
+
 function deleteMessage(id) {
     openDeleteModal(id);
+}
+
+async function updateLockStatus(id, newStatus) {
+    try {
+        const ref = doc(db, "messages", id);
+        await setDoc(ref, { locked: newStatus }, { merge: true });
+    } catch (e) {
+        console.error("Error updating lock:", e);
+        alert("操作に失敗しました");
+    }
 }
 
 function renderMessage(message, id) {
@@ -179,21 +298,81 @@ function renderMessage(message, id) {
     }
 
     const initial = (message.name || '名').charAt(0);
+    const isLocked = message.locked === true;
+    const isMyMessage = message.clientId === clientId;
+
+    // Lock UI
+    const lockBtnHtml = isMyMessage
+        ? `<button class="lock-btn ${isLocked ? 'locked' : ''}" title="${isLocked ? 'ロック解除' : 'ロックする'}">
+             ${isLocked ? '🔒' : '🔓'}
+           </button>`
+        : (isLocked ? '<span class="lock-btn locked" title="ロックされています" style="cursor:default">🔒</span>' : '');
+
+    const deleteBtnHtml = !isLocked && isMyMessage
+        ? `<button class="delete-btn" title="削除">×</button>`
+        : '';
 
     div.innerHTML = `
         <div class="message-header">
             <div class="message-avatar">${sanitizeHTML(initial)}</div>
-            <span class="message-name">${sanitizeHTML(message.name)}</span>
-            <span class="message-meta">${timeString}</span>
-            <button class="delete-btn" title="削除">×</button>
+            <div class="message-info">
+                <span class="message-name">${sanitizeHTML(message.name)}</span>
+                <span class="message-time">${timeString}</span>
+            </div>
+            <div class="message-actions">
+                ${deleteBtnHtml}
+                ${lockBtnHtml}
+            </div>
         </div>
         <div class="message-content">${sanitizeHTML(message.content)}</div>
     `;
 
     const deleteBtn = div.querySelector('.delete-btn');
     if (deleteBtn) {
-        deleteBtn.addEventListener('click', () => deleteMessage(id));
+        deleteBtn.addEventListener('click', () => {
+            if (message.locked) {
+                alert('この投稿はロックされているため削除できません。');
+                return;
+            }
+            deleteMessage(id);
+        });
     }
+
+    const lockBtn = div.querySelector('button.lock-btn');
+    if (lockBtn) {
+        lockBtn.addEventListener('click', () => {
+            updateLockStatus(id, !isLocked);
+        });
+    }
+
+    // Force Delete Logic: 5 consecutive taps
+    let tapCount = 0;
+    let tapTimer = null;
+
+    div.addEventListener('click', (e) => {
+        // Ignore clicks on buttons to prevent conflict
+        if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+
+        tapCount++;
+
+        if (tapTimer) clearTimeout(tapTimer);
+
+        if (tapCount >= 5) {
+            tapCount = 0;
+            const password = prompt('管理者機能: 強制削除パスワードを入力してください');
+            if (password === '3141592') {
+                deleteDoc(doc(db, "messages", id))
+                    .then(() => alert('強制削除しました'))
+                    .catch((err) => alert('削除失敗: ' + err));
+            } else if (password !== null) {
+                alert('パスワードが違います');
+            }
+        } else {
+            tapTimer = setTimeout(() => {
+                tapCount = 0;
+            }, 400); // 400ms timeout for consecutive taps
+        }
+    });
 
     if (messagesContainer) {
         messagesContainer.appendChild(div);
@@ -213,3 +392,239 @@ function sanitizeHTML(str) {
         }[m];
     });
 }
+
+// Page Flip Logic
+const bookContainer = document.querySelector('.book-container');
+let touchStartX = 0;
+let touchEndX = 0;
+
+function handleGesture() {
+    if (!bookContainer) return;
+    const swipeThreshold = 50;
+
+    // Check swipe distance
+    if (touchEndX < touchStartX - swipeThreshold) {
+        // Swiped Left (Next Page)
+        bookContainer.classList.add('flipped');
+    }
+
+    if (touchEndX > touchStartX + swipeThreshold) {
+        // Swiped Right (Prev Page)
+        bookContainer.classList.remove('flipped');
+    }
+}
+
+document.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].screenX;
+}, { passive: true });
+
+document.addEventListener('touchend', e => {
+    touchEndX = e.changedTouches[0].screenX;
+    handleGesture();
+}, { passive: true });
+
+// Mouse support for testing on PC
+let isDragging = false;
+
+document.addEventListener('mousedown', e => {
+    isDragging = true;
+    touchStartX = e.screenX;
+});
+
+document.addEventListener('mouseup', e => {
+    if (!isDragging) return;
+    isDragging = false;
+    touchEndX = e.screenX;
+    handleGesture();
+});
+
+import { setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+// Othello Game Logic
+const boardElement = document.getElementById('othello-board');
+const turnIndicator = document.getElementById('turnIndicator');
+const resetGameBtn = document.getElementById('resetGameBtn');
+const gameDocRef = doc(db, "games", "othello");
+
+// Client ID for calculating consecutive moves
+// clientId is now defined at the top of the file.
+
+let boardState = Array(8).fill(null).map(() => Array(8).fill(null));
+let currentTurn = 'black';
+let lastMoveBy = null;
+
+// Initialize Board UI
+function initBoard() {
+    boardElement.innerHTML = '';
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            const cell = document.createElement('div');
+            cell.classList.add('cell');
+            cell.dataset.row = row;
+            cell.dataset.col = col;
+            cell.addEventListener('click', () => handleCellClick(row, col));
+            boardElement.appendChild(cell);
+        }
+    }
+}
+
+// Render Board State
+async function renderBoard() {
+    const cells = document.querySelectorAll('.cell');
+    cells.forEach(cell => {
+        const r = parseInt(cell.dataset.row);
+        const c = parseInt(cell.dataset.col);
+        const piece = boardState[r][c];
+
+        cell.innerHTML = '';
+        if (piece) {
+            const p = document.createElement('div');
+            p.classList.add('piece', piece);
+            cell.appendChild(p);
+        }
+    });
+
+    // Update UI text
+    const isMyTurn = lastMoveBy !== clientId;
+    const statusText = currentTurn === 'black' ? '黒の番' : '白の番';
+    const restrictionText = !isMyTurn ? '(待機中...)' : '';
+
+    turnIndicator.innerText = `${statusText} ${restrictionText}`;
+
+    if (!isMyTurn) {
+        turnIndicator.style.color = '#ef4444';
+    } else {
+        turnIndicator.style.color = 'var(--text-primary)';
+    }
+
+    // Check if game document exists, if not create it
+    const snap = await getDoc(gameDocRef);
+    if (!snap.exists()) {
+        resetGame();
+    }
+}
+
+// Reset Game State
+async function resetGame() {
+    // Initial setup: 4 pieces in center
+    const newBoard = Array(8).fill(null).map(() => Array(8).fill(null));
+    newBoard[3][3] = 'white';
+    newBoard[3][4] = 'black';
+    newBoard[4][3] = 'black';
+    newBoard[4][4] = 'white';
+
+    try {
+        await setDoc(gameDocRef, {
+            board: JSON.stringify(newBoard),
+            turn: 'black',
+            lastMoveBy: null,
+            updatedAt: serverTimestamp()
+        });
+        alert('ゲームをリセットしました！');
+    } catch (e) {
+        console.error("Error resetting game:", e);
+    }
+}
+
+// Handle Cell Click
+async function handleCellClick(row, col) {
+    if (boardState[row][col] !== null) return;
+    if (lastMoveBy === clientId) {
+        alert("連続して置くことはできません！他の人が置くのを待ってください。");
+        return;
+    }
+
+    const flips = getFlips(row, col, currentTurn);
+    if (flips.length === 0) {
+        // Allow pass? For now just alert invalid move
+        // Simple validation: must flip at least one
+        return;
+    }
+
+    // Apply move locally for instant feedback (optional, but safer to wait for write)
+    // Here we strictly write to Firestore and let snapshot update UI
+
+    try {
+        // Deep copy board
+        const nextBoard = boardState.map(r => [...r]);
+
+        // Place piece
+        nextBoard[row][col] = currentTurn;
+
+        // Flip pieces
+        flips.forEach(p => {
+            nextBoard[p.r][p.c] = currentTurn;
+        });
+
+        const nextTurn = currentTurn === 'black' ? 'white' : 'black';
+
+        await setDoc(gameDocRef, {
+            board: JSON.stringify(nextBoard),
+            turn: nextTurn,
+            lastMoveBy: clientId,
+            updatedAt: serverTimestamp()
+        });
+    } catch (e) {
+        console.error("Error updating game:", e);
+        alert("エラーが発生しました。");
+    }
+}
+
+// Othello Logic: Get flippable pieces
+function getFlips(row, col, color) {
+    const directions = [
+        [-1, -1], [-1, 0], [-1, 1],
+        [0, -1], [0, 1],
+        [1, -1], [1, 0], [1, 1]
+    ];
+
+    let flips = [];
+    const opponent = color === 'black' ? 'white' : 'black';
+
+    directions.forEach(([dr, dc]) => {
+        let r = row + dr;
+        let c = col + dc;
+        let potentialFlips = [];
+
+        while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+            if (boardState[r][c] === opponent) {
+                potentialFlips.push({ r, c });
+            } else if (boardState[r][c] === color) {
+                if (potentialFlips.length > 0) {
+                    flips = flips.concat(potentialFlips);
+                }
+                break;
+            } else {
+                break;
+            }
+            r += dr;
+            c += dc;
+        }
+    });
+
+    return flips;
+}
+
+// Sync Game State
+onSnapshot(gameDocRef, (doc) => {
+    if (doc.exists()) {
+        const data = doc.data();
+        if (data.board) boardState = JSON.parse(data.board);
+        if (data.turn) currentTurn = data.turn;
+        if (data.lastMoveBy !== undefined) lastMoveBy = data.lastMoveBy;
+        renderBoard();
+    }
+});
+
+if (resetGameBtn) {
+    resetGameBtn.addEventListener('click', () => {
+        if (confirm('ゲームをリセットしてもよろしいですか？')) {
+            resetGame();
+        }
+    });
+}
+
+// Init
+initBoard();
+
+

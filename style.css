@@ -393,3 +393,237 @@ footer a:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
 }
+
+/* Page Flip Effect */
+.book-container {
+    position: relative;
+    width: 600px;
+    max-width: 100%;
+    margin: 0 auto;
+    perspective: 1500px;
+    height: auto;
+    min-height: 500px;
+    /* Ensure height for flip */
+    transform-style: preserve-3d;
+}
+
+.page {
+    position: relative;
+    /* Change to relative for stacking context? No, absolute for book pages */
+    width: 100%;
+    /* height: 100%;  Ideally should be fixed height or determined by content. 
+       For dynamic height, it's tricky. Let's try absolute but update container height via JS? 
+       Or just make them stack naturally. 
+       Actually, standard book flip uses absolute. 
+       But if content length varies, we need container to match tallest. */
+    min-height: 80vh;
+    top: 0;
+    left: 0;
+    background-color: transparent;
+    transition: transform 0.6s cubic-bezier(0.645, 0.045, 0.355, 1);
+    transform-style: preserve-3d;
+    transform-origin: left center;
+}
+
+.page {
+    position: absolute;
+    backface-visibility: hidden;
+    background: #f0f2f5;
+}
+
+#page-1 {
+    z-index: 2;
+    transform: rotateY(0deg);
+}
+
+#page-2 {
+    z-index: 1;
+    transform: rotateY(180deg);
+    /* Start flipped */
+    background: #fff;
+}
+
+/* Flipped State */
+.book-container.flipped #page-1 {
+    transform: rotateY(-180deg);
+}
+
+.book-container.flipped #page-2 {
+    transform: rotateY(0deg);
+    z-index: 3;
+}
+
+.new-function-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    min-height: 50vh;
+    padding: 2rem;
+}
+
+.placeholder-content {
+    background: white;
+    padding: 3rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.placeholder-content h2 {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    font-size: 1.8rem;
+}
+
+/* Modal Z-index fix */
+.modal-overlay {
+    z-index: 9999;
+    /* Ensure above everything */
+}
+
+.delete-all-btn:hover {
+    background: #fecaca !important;
+}
+
+/* Lock Button Styles */
+.message-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: auto;
+}
+
+.message-meta {
+    margin-left: initial;
+    margin-right: 0.5rem;
+}
+
+.lock-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: #cbd5e1;
+    transition: all 0.2s;
+    padding: 0 0.5rem;
+}
+
+.lock-btn:hover {
+    color: #94a3b8;
+}
+
+.lock-btn.locked {
+    color: #ef4444;
+}
+
+/* Updated Message Header Layout */
+.message-header {
+    align-items: flex-start;
+}
+
+.message-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.message-time {
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+
+/* Othello Game Styles */
+.othello-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: white;
+    padding: 1.5rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    max-width: 100%;
+}
+
+.othello-container h2 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.game-status {
+    margin-bottom: 1rem;
+    font-weight: bold;
+    font-size: 1.2rem;
+    background: #f3f4f6;
+    padding: 0.5rem 1.5rem;
+    border-radius: 50px;
+    color: var(--text-primary);
+}
+
+.othello-board {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    gap: 2px;
+    background: #2e7d32;
+    padding: 8px;
+    border-radius: 4px;
+    width: 320px;
+    height: 320px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.cell {
+    background: #4caf50;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+}
+
+.cell:hover {
+    background: #66bb6a;
+}
+
+.piece {
+    width: 80%;
+    height: 80%;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s ease;
+}
+
+.piece.black {
+    background: #1f2937;
+    background: radial-gradient(circle at 30% 30%, #4b5563 0%, #1f2937 100%);
+}
+
+.piece.white {
+    background: #f9fafb;
+    background: radial-gradient(circle at 30% 30%, #ffffff 0%, #e5e7eb 100%);
+}
+
+.game-controls {
+    margin-top: 1.5rem;
+}
+
+.game-info {
+    margin-top: 1rem;
+    font-size: 0.8rem;
+    color: #ef4444;
+}
+
+.swipe-hint {
+    margin-top: 0.5rem;
+    color: var(--text-secondary);
+}
+
+@media (max-width: 400px) {
+    .othello-board {
+        width: 280px;
+        height: 280px;
+    }
+}
