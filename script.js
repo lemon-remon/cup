@@ -452,6 +452,8 @@ const gameDocRef = doc(db, "games", "othello");
 let boardState = Array(8).fill(null).map(() => Array(8).fill(null));
 let currentTurn = 'black';
 let lastMoveBy = null;
+let gameStatus = 'playing';
+let winner = null;
 
 // Initialize Board UI
 function initBoard() {
@@ -485,16 +487,31 @@ async function renderBoard() {
     });
 
     // Update UI text
-    const isMyTurn = lastMoveBy !== clientId;
-    const statusText = currentTurn === 'black' ? '黒の番' : '白の番';
-    const restrictionText = !isMyTurn ? '(待機中...)' : '';
+    const flatBoard = boardState.flat();
+    const blackCount = flatBoard.filter(c => c === 'black').length;
+    const whiteCount = flatBoard.filter(c => c === 'white').length;
 
-    turnIndicator.innerText = `${statusText} ${restrictionText}`;
+    if (gameStatus === 'finished') {
+        let resultText = '';
+        if (winner === 'black') resultText = '黒の勝ち！';
+        else if (winner === 'white') resultText = '白の勝ち！';
+        else resultText = '引き分け！';
 
-    if (!isMyTurn) {
-        turnIndicator.style.color = '#ef4444';
+        turnIndicator.innerHTML = `<span style="color:#e11d48">${resultText}</span> (黒:${blackCount} - 白:${whiteCount})`;
+        turnIndicator.style.color = '#e11d48';
     } else {
-        turnIndicator.style.color = 'var(--text-primary)';
+        const isMyTurn = lastMoveBy !== clientId;
+        const statusText = currentTurn === 'black' ? '黒の番' : '白の番';
+        const restrictionText = !isMyTurn ? '(待機中...)' : '';
+        const countText = `(黒:${blackCount} - 白:${whiteCount})`;
+
+        turnIndicator.innerText = `${statusText} ${restrictionText} ${countText}`;
+
+        if (!isMyTurn) {
+            turnIndicator.style.color = '#ef4444';
+        } else {
+            turnIndicator.style.color = 'var(--text-primary)';
+        }
     }
 
     // Check if game document exists, if not create it
@@ -518,6 +535,8 @@ async function resetGame() {
             board: JSON.stringify(newBoard),
             turn: 'black',
             lastMoveBy: null,
+            status: 'playing',
+            winner: null,
             updatedAt: serverTimestamp()
         });
         alert('ゲームをリセットしました！');
@@ -529,20 +548,21 @@ async function resetGame() {
 // Handle Cell Click
 async function handleCellClick(row, col) {
     if (boardState[row][col] !== null) return;
+    if (boardState.flat().every(cell => cell !== null)) return; // Board full
+    if (gameStatus === 'finished') return; // Do not allow moves if game is finished
+
+    // Check if game is already finished (locally)
+    // Ideally we check a status flag, but for now rely on board state logic or UI blocking.
+
     if (lastMoveBy === clientId) {
         alert("連続して置くことはできません！他の人が置くのを待ってください。");
         return;
     }
 
-    const flips = getFlips(row, col, currentTurn);
+    const flips = getFlips(row, col, currentTurn); // Uses current global boardState
     if (flips.length === 0) {
-        // Allow pass? For now just alert invalid move
-        // Simple validation: must flip at least one
         return;
     }
-
-    // Apply move locally for instant feedback (optional, but safer to wait for write)
-    // Here we strictly write to Firestore and let snapshot update UI
 
     try {
         // Deep copy board
@@ -556,12 +576,41 @@ async function handleCellClick(row, col) {
             nextBoard[p.r][p.c] = currentTurn;
         });
 
-        const nextTurn = currentTurn === 'black' ? 'white' : 'black';
+        const opponent = currentTurn === 'black' ? 'white' : 'black';
+        let nextTurn = opponent;
+        let gameStatus = 'playing';
+        let winner = null;
+
+        // Check if opponent has any valid moves
+        const opponentHasMove = hasValidMove(nextBoard, opponent);
+
+        if (!opponentHasMove) {
+            // Opponent cannot move. Check if current player can move.
+            const currentHasMove = hasValidMove(nextBoard, currentTurn);
+
+            if (currentHasMove) {
+                // Pass: Opponent skipped, turn remains currentTurn
+                nextTurn = currentTurn;
+                alert(`${opponent === 'black' ? '黒' : '白'}は置く場所がありません。パスします。`);
+            } else {
+                // Determine winner
+                gameStatus = 'finished';
+                const flatBoard = nextBoard.flat();
+                const blackCount = flatBoard.filter(c => c === 'black').length;
+                const whiteCount = flatBoard.filter(c => c === 'white').length;
+
+                if (blackCount > whiteCount) winner = 'black';
+                else if (whiteCount > blackCount) winner = 'white';
+                else winner = 'draw';
+            }
+        }
 
         await setDoc(gameDocRef, {
             board: JSON.stringify(nextBoard),
             turn: nextTurn,
             lastMoveBy: clientId,
+            status: gameStatus,
+            winner: winner,
             updatedAt: serverTimestamp()
         });
     } catch (e) {
@@ -570,8 +619,22 @@ async function handleCellClick(row, col) {
     }
 }
 
+// Check if a player has any valid move
+function hasValidMove(board, color) {
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            if (board[r][c] === null) {
+                if (getFlips(r, c, color, board).length > 0) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
 // Othello Logic: Get flippable pieces
-function getFlips(row, col, color) {
+function getFlips(row, col, color, board = boardState) {
     const directions = [
         [-1, -1], [-1, 0], [-1, 1],
         [0, -1], [0, 1],
@@ -587,9 +650,9 @@ function getFlips(row, col, color) {
         let potentialFlips = [];
 
         while (r >= 0 && r < 8 && c >= 0 && c < 8) {
-            if (boardState[r][c] === opponent) {
+            if (board[r][c] === opponent) {
                 potentialFlips.push({ r, c });
-            } else if (boardState[r][c] === color) {
+            } else if (board[r][c] === color) {
                 if (potentialFlips.length > 0) {
                     flips = flips.concat(potentialFlips);
                 }
