@@ -690,4 +690,91 @@ if (resetGameBtn) {
 // Init
 initBoard();
 
+// Online User Counter Logic
+const userCountElement = document.getElementById('userCount');
+const presenceCollectionRef = collection(db, "presence");
+
+// Heartbeat: Update presence every 30 seconds
+async function updatePresence() {
+    try {
+        const userRef = doc(db, "presence", clientId);
+        await setDoc(userRef, {
+            lastSeen: serverTimestamp(),
+            userAgent: navigator.userAgent
+        }, { merge: true });
+    } catch (e) {
+        console.error("Error updating presence:", e);
+    }
+}
+
+// Initial update
+updatePresence();
+
+// Periodic update
+setInterval(updatePresence, 30000);
+
+// Remove presence on unload (Best effort)
+window.addEventListener('beforeunload', () => {
+    // Note: async calls in beforeunload are unreliable. 
+    // We rely on the timestamp timeout for accurate counting.
+    const userRef = doc(db, "presence", clientId);
+    // Using sendBeacon or similar would be better but requires an API endpoint usually.
+    // For Firestore, we just let it timeout or try a detach catch-free delete
+    deleteDoc(userRef).catch(err => { });
+});
+
+// Listen for active users
+const presenceQuery = query(presenceCollectionRef);
+
+onSnapshot(presenceQuery, (snapshot) => {
+    // We need to calculate active users based on local time vs server time approximation
+    // Since we don't have easy server-side filtering without cloud functions,
+    // we fetch all presence docs (scalability warning if > 100 users, but fine for small app)
+
+    const now = new Date();
+    // Consider active if seen in last 2 minutes
+    const cutoff = new Date(now.getTime() - 2 * 60 * 1000);
+
+    let activeCount = 0;
+
+    snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data.lastSeen) {
+            // Firestore timestamp to Date
+            const lastSeenDate = data.lastSeen.toDate();
+            if (lastSeenDate > cutoff) {
+                activeCount++;
+            }
+        }
+    });
+
+    // Ensure at least 1 (me)
+    if (activeCount < 1) activeCount = 1;
+
+    if (userCountElement) {
+        // Animate or set text
+        const currentVal = parseInt(userCountElement.innerText) || 0;
+        if (currentVal !== activeCount) {
+            animateValue(userCountElement, currentVal, activeCount, 500);
+        } else {
+            userCountElement.innerText = activeCount;
+        }
+    }
+});
+
+function animateValue(obj, start, end, duration) {
+    let startTimestamp = null;
+    const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        obj.innerHTML = Math.floor(progress * (end - start) + start);
+        if (progress < 1) {
+            window.requestAnimationFrame(step);
+        } else {
+            obj.innerHTML = end;
+        }
+    };
+    window.requestAnimationFrame(step);
+}
+
 
