@@ -21,6 +21,15 @@
         <span id="userCount">1</span>人がオンライン
     </div>
 
+    <!-- Login/User Button -->
+    <div id="authContainer" class="auth-container">
+        <button id="loginOpenBtn" class="auth-btn">ログイン</button>
+        <div id="userInfo" class="user-info hidden">
+            <span id="displayUserName" class="user-name"></span>
+            <button id="logoutBtn" class="logout-btn">ログアウト</button>
+        </div>
+    </div>
+
     <div id="tosModal" class="modal-overlay">
         <div class="modal-content">
             <button id="closeTosBtn" class="close-btn">&times;</button>
@@ -42,6 +51,23 @@
             <div class="modal-actions">
                 <button id="cancelDeleteBtn" class="secondary-btn">キャンセル</button>
                 <button id="confirmDeleteBtn" class="danger-btn">削除する</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="loginModal" class="modal-overlay">
+        <div class="modal-content auth-modal">
+            <button id="closeLoginBtn" class="close-btn">&times;</button>
+            <h2 id="authModalTitle">ログイン</h2>
+            <div class="auth-form">
+                <div class="input-group">
+                    <input type="text" id="authUsername" placeholder="ユーザー名" maxlength="20">
+                </div>
+                <div class="input-group">
+                    <input type="password" id="authPassword" placeholder="パスワード">
+                </div>
+                <button id="authSubmitBtn" class="primary-btn">ログインする</button>
+                <p class="auth-switch">アカウントをお持ちでないですか？ <a href="#" id="switchToRegister">新規登録</a></p>
             </div>
         </div>
     </div>
@@ -108,14 +134,41 @@
 
                     <div class="othello-container">
                         <h2>オセロ</h2>
-                        <div class="game-status">
-                            <span id="turnIndicator">黒の番</span>
+                        <div class="othello-game-layout">
+                            <div class="othello-board-wrapper">
+                                <div class="game-status">
+                                    <span id="turnIndicator">黒の番</span>
+                                </div>
+                                <div id="othello-board" class="othello-board"></div>
+                            </div>
+                            <div class="game-sidebar">
+                                <div class="sidebar-card">
+                                    <h3>対戦成績</h3>
+                                    <div class="stats-row">
+                                        <div class="stat-item black">
+                                            <span class="stat-label">黒 (Black)</span>
+                                            <span id="blackCount" class="stat-value">2</span>
+                                        </div>
+                                        <div class="stat-item white">
+                                            <span class="stat-label">白 (White)</span>
+                                            <span id="whiteCount" class="stat-value">2</span>
+                                        </div>
+                                    </div>
+                                    <div class="last-move-info">
+                                        <span class="label">最後に置いた人:</span>
+                                        <span id="lastPlayerName" class="value">-</span>
+                                    </div>
+                                    <div class="last-reset-info">
+                                        <span class="label">最後にリセットした人:</span>
+                                        <span id="lastResetName" class="value">-</span>
+                                    </div>
+                                </div>
+                                <div class="game-controls">
+                                    <button id="resetGameBtn" class="secondary-btn">リセット</button>
+                                </div>
+                                <p class="game-info">※連続投稿禁止！一度置いたら他の人が置くまで待ってね</p>
+                            </div>
                         </div>
-                        <div id="othello-board" class="othello-board"></div>
-                        <div class="game-controls">
-                            <button id="resetGameBtn" class="secondary-btn">リセット</button>
-                        </div>
-                        <p class="game-info">※連続投稿禁止！一度置いたら他の人が置くまで待ってね</p>
                         <p class="swipe-hint">&larr; スワイプで戻る</p>
                     </div>
 

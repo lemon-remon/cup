@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, deleteDoc, doc, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, deleteDoc, doc, where, getDocs, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyDdQyh3u1ZgzlgbIb3dc1Gx--5Hdkukx6U",
@@ -10,15 +11,19 @@ const firebaseConfig = {
     appId: "1:245177049970:web:634a9cc62418161722b3eb"
 };
 
-// Client ID for identifying user's posts
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+// Client ID for identifying user's posts (Legacy/Fallback)
 let clientId = localStorage.getItem('othelloClientId');
 if (!clientId) {
     clientId = 'user_' + Math.random().toString(36).substr(2, 9);
     localStorage.setItem('othelloClientId', clientId);
 }
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+// Global user state
+let currentUser = null;
 
 const nameInput = document.getElementById('nameInput');
 const messageInput = document.getElementById('messageInput');
@@ -33,6 +38,21 @@ const closeTosBtn = document.getElementById('closeTosBtn');
 const deleteModal = document.getElementById('deleteModal');
 const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
 const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+
+// Auth elements
+const loginModal = document.getElementById('loginModal');
+const loginOpenBtn = document.getElementById('loginOpenBtn');
+const closeLoginBtn = document.getElementById('closeLoginBtn');
+const authUsernameInput = document.getElementById('authUsername');
+const authPasswordInput = document.getElementById('authPassword');
+const authSubmitBtn = document.getElementById('authSubmitBtn');
+const switchToRegister = document.getElementById('switchToRegister');
+const authModalTitle = document.getElementById('authModalTitle');
+const userInfo = document.getElementById('userInfo');
+const displayUserName = document.getElementById('displayUserName');
+const logoutBtn = document.getElementById('logoutBtn');
+
+let isRegisterMode = false;
 
 let deleteTargetId = null;
 
@@ -83,6 +103,115 @@ if (deleteModal) {
     });
 }
 
+// Auth Logic
+const USERNAME_SUFFIX = "@play-app.local";
+
+function usernameToEmail(username) {
+    return `${username.toLowerCase().trim()}${USERNAME_SUFFIX}`;
+}
+
+function openLoginModal() {
+    loginModal.classList.add('active');
+    isRegisterMode = false;
+    updateAuthModalUI();
+}
+
+function closeLoginModal() {
+    loginModal.classList.remove('active');
+    authUsernameInput.value = '';
+    authPasswordInput.value = '';
+}
+
+function updateAuthModalUI() {
+    if (isRegisterMode) {
+        authModalTitle.innerText = '新規登録';
+        authSubmitBtn.innerText = 'アカウントを作成する';
+        switchToRegister.innerText = 'ログインに戻る';
+        document.querySelector('.auth-switch').firstChild.textContent = '既にアカウントをお持ちですか？ ';
+    } else {
+        authModalTitle.innerText = 'ログイン';
+        authSubmitBtn.innerText = 'ログインする';
+        switchToRegister.innerText = '新規登録';
+        document.querySelector('.auth-switch').firstChild.textContent = 'アカウントをお持ちでないですか？ ';
+    }
+}
+
+switchToRegister.addEventListener('click', (e) => {
+    e.preventDefault();
+    isRegisterMode = !isRegisterMode;
+    updateAuthModalUI();
+});
+
+loginOpenBtn.addEventListener('click', openLoginModal);
+closeLoginBtn.addEventListener('click', closeLoginModal);
+
+authSubmitBtn.addEventListener('click', async () => {
+    const username = authUsernameInput.value.trim();
+    const password = authPasswordInput.value;
+
+    if (!username || !password) {
+        alert("ユーザー名とパスワードを入力してください。");
+        return;
+    }
+
+    if (password.length < 6) {
+        alert("パスワードは6文字以上で入力してください。");
+        return;
+    }
+
+    const email = usernameToEmail(username);
+    authSubmitBtn.disabled = true;
+    const originalText = authSubmitBtn.innerText;
+    authSubmitBtn.innerText = '処理中...';
+
+    try {
+        if (isRegisterMode) {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            await updateProfile(userCredential.user, { displayName: username });
+            alert("アカウントを作成しました！");
+        } else {
+            await signInWithEmailAndPassword(auth, email, password);
+            alert("ログインしました！");
+        }
+        closeLoginModal();
+    } catch (error) {
+        console.error("Auth error:", error);
+        if (error.code === 'auth/email-already-in-use') {
+            alert("このユーザー名は既に使われています。");
+        } else if (error.code === 'auth/invalid-credential') {
+            alert("ユーザー名またはパスワードが違います。");
+        } else {
+            alert("エラーが発生しました: " + error.message);
+        }
+    } finally {
+        authSubmitBtn.disabled = false;
+        authSubmitBtn.innerText = originalText;
+    }
+});
+
+logoutBtn.addEventListener('click', () => {
+    if (confirm("ログアウトしますか？")) {
+        signOut(auth);
+    }
+});
+
+onAuthStateChanged(auth, (user) => {
+    currentUser = user;
+    if (user) {
+        loginOpenBtn.classList.add('hidden');
+        userInfo.classList.remove('hidden');
+        displayUserName.innerText = user.displayName || user.email.split('@')[0];
+        nameInput.value = user.displayName || '';
+        nameInput.readOnly = true;
+    } else {
+        loginOpenBtn.classList.remove('hidden');
+        userInfo.classList.add('hidden');
+        displayUserName.innerText = '';
+        nameInput.value = '';
+        nameInput.readOnly = false;
+    }
+});
+
 if (confirmDeleteBtn) {
     confirmDeleteBtn.addEventListener('click', async () => {
         if (!deleteTargetId) return;
@@ -122,7 +251,8 @@ async function sendMessage() {
             name: name,
             content: content,
             timestamp: serverTimestamp(),
-            clientId: clientId
+            clientId: currentUser ? currentUser.uid : clientId,
+            uid: currentUser ? currentUser.uid : null
         });
         messageInput.value = '';
     } catch (e) {
@@ -174,10 +304,11 @@ if (deleteAllBtn) {
         deleteAllBtn.innerText = '削除中...';
 
         try {
-            // Query for my messages
+            // Query for my messages (support both uid and legacy clientId)
+            const uid = currentUser ? currentUser.uid : clientId;
             const q = query(
                 collection(db, "messages"),
-                where("clientId", "==", clientId)
+                where(currentUser ? "uid" : "clientId", "==", uid)
             );
 
             const snapshot = await getDocs(q);
@@ -297,9 +428,10 @@ function renderMessage(message, id) {
         }
     }
 
-    const initial = (message.name || '名').charAt(0);
+    const initial = ((message.name || message.content || '名') + '').charAt(0);
     const isLocked = message.locked === true;
-    const isMyMessage = message.clientId === clientId;
+    const currentUid = currentUser ? currentUser.uid : clientId;
+    const isMyMessage = (message.uid === currentUid) || (message.clientId === currentUid);
 
     // Lock UI
     const lockBtnHtml = isMyMessage
@@ -382,6 +514,7 @@ function renderMessage(message, id) {
 }
 
 function sanitizeHTML(str) {
+    if (typeof str !== 'string') return '';
     return str.replace(/[&<>"']/g, function (m) {
         return {
             '&': '&amp;',
@@ -438,12 +571,14 @@ document.addEventListener('mouseup', e => {
     handleGesture();
 });
 
-import { setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
 // Othello Game Logic
 const boardElement = document.getElementById('othello-board');
 const turnIndicator = document.getElementById('turnIndicator');
 const resetGameBtn = document.getElementById('resetGameBtn');
+const blackCountEl = document.getElementById('blackCount');
+const whiteCountEl = document.getElementById('whiteCount');
+const lastPlayerNameEl = document.getElementById('lastPlayerName');
+const lastResetNameEl = document.getElementById('lastResetName');
 const gameDocRef = doc(db, "games", "othello");
 
 // Client ID for calculating consecutive moves
@@ -491,6 +626,10 @@ async function renderBoard() {
     const blackCount = flatBoard.filter(c => c === 'black').length;
     const whiteCount = flatBoard.filter(c => c === 'white').length;
 
+    // Update Sidebar Stats
+    if (blackCountEl) blackCountEl.innerText = blackCount;
+    if (whiteCountEl) whiteCountEl.innerText = whiteCount;
+
     if (gameStatus === 'finished') {
         let resultText = '';
         if (winner === 'black') resultText = '黒の勝ち！';
@@ -500,14 +639,15 @@ async function renderBoard() {
         turnIndicator.innerHTML = `<span style="color:#e11d48">${resultText}</span> (黒:${blackCount} - 白:${whiteCount})`;
         turnIndicator.style.color = '#e11d48';
     } else {
-        const isMyTurn = lastMoveBy !== clientId;
+        const currentUid = currentUser ? currentUser.uid : clientId;
+        const isMyTurn = lastMoveBy !== currentUid;
         const statusText = currentTurn === 'black' ? '黒の番' : '白の番';
-        const restrictionText = !isMyTurn ? '(待機中...)' : '';
+        const restrictionText = !isMyTurn ? '(待機中...)' : (!currentUser ? '(ログインが必要)' : '');
         const countText = `(黒:${blackCount} - 白:${whiteCount})`;
 
         turnIndicator.innerText = `${statusText} ${restrictionText} ${countText}`;
 
-        if (!isMyTurn) {
+        if (!isMyTurn || !currentUser) {
             turnIndicator.style.color = '#ef4444';
         } else {
             turnIndicator.style.color = 'var(--text-primary)';
@@ -531,10 +671,13 @@ async function resetGame() {
     newBoard[4][4] = 'white';
 
     try {
+        const resetterName = currentUser ? (currentUser.displayName || '名無しさん') : 'システム';
         await setDoc(gameDocRef, {
             board: JSON.stringify(newBoard),
             turn: 'black',
             lastMoveBy: null,
+            lastMoveByName: '-',
+            lastResetByName: resetterName,
             status: 'playing',
             winner: null,
             updatedAt: serverTimestamp()
@@ -547,14 +690,19 @@ async function resetGame() {
 
 // Handle Cell Click
 async function handleCellClick(row, col) {
+    if (!currentUser) {
+        alert("オセロをプレイするにはログインが必要です！");
+        openLoginModal();
+        return;
+    }
+
     if (boardState[row][col] !== null) return;
     if (boardState.flat().every(cell => cell !== null)) return; // Board full
     if (gameStatus === 'finished') return; // Do not allow moves if game is finished
 
-    // Check if game is already finished (locally)
-    // Ideally we check a status flag, but for now rely on board state logic or UI blocking.
+    const currentUid = currentUser.uid;
 
-    if (lastMoveBy === clientId) {
+    if (lastMoveBy === currentUid) {
         alert("連続して置くことはできません！他の人が置くのを待ってください。");
         return;
     }
@@ -605,10 +753,13 @@ async function handleCellClick(row, col) {
             }
         }
 
+        const currentUid = currentUser.uid;
+        const currentName = currentUser.displayName || '名無しさん';
         await setDoc(gameDocRef, {
             board: JSON.stringify(nextBoard),
             turn: nextTurn,
-            lastMoveBy: clientId,
+            lastMoveBy: currentUid,
+            lastMoveByName: currentName,
             status: gameStatus,
             winner: winner,
             updatedAt: serverTimestamp()
@@ -675,12 +826,23 @@ onSnapshot(gameDocRef, (doc) => {
         if (data.board) boardState = JSON.parse(data.board);
         if (data.turn) currentTurn = data.turn;
         if (data.lastMoveBy !== undefined) lastMoveBy = data.lastMoveBy;
+        if (lastPlayerNameEl) {
+            lastPlayerNameEl.innerText = data.lastMoveByName || '-';
+        }
+        if (lastResetNameEl) {
+            lastResetNameEl.innerText = data.lastResetByName || '-';
+        }
         renderBoard();
     }
 });
 
 if (resetGameBtn) {
     resetGameBtn.addEventListener('click', () => {
+        if (!currentUser) {
+            alert("リセットするにはログインが必要です！");
+            openLoginModal();
+            return;
+        }
         if (confirm('ゲームをリセットしてもよろしいですか？')) {
             resetGame();
         }
